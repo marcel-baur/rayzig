@@ -1,67 +1,93 @@
 const rl = @import("raylib");
 const std = @import("std");
 
+const Gamestate = struct {
+    ball_x: f32,
+    ball_y: f32,
+    ball_h: f32,
+    ball_w: f32,
+    bat_w: f32,
+    bat_h: f32,
+    pos_bat: f32,
+    speed_x: f32,
+    speed_y: f32,
+    bat_speed: f32,
+    counter: i16,
+    has_started: bool,
+};
+
+const screenWidth = 800;
+const screenHeight = 450;
+fn new_game_state() Gamestate {
+    return Gamestate{
+        .speed_x = 400,
+        .speed_y = 400,
+        .ball_x = 0,
+        .ball_y = 0,
+        .ball_w = 20,
+        .ball_h = 20,
+
+        .pos_bat = @divFloor(screenHeight, 2) - @divFloor(20, 2),
+        .bat_speed = 400,
+        .bat_w = 10,
+        .bat_h = 80,
+        .counter = 0,
+        .has_started = false,
+    };
+}
+
 pub fn main() anyerror!void {
     // Initialization
     //--------------------------------------------------------------------------------------
-    const screenWidth = 800;
-    const screenHeight = 450;
 
     rl.initWindow(screenWidth, screenHeight, "Pong without Friends");
     defer rl.closeWindow();
 
     rl.setTargetFPS(60);
-    var ball_x: f32 = 0;
-    var ball_y: f32 = 0;
-    var ball_h: f32 = 20;
-    var ball_w: f32 = 20;
-    var bat_h: f32 = 80;
-    var bat_w: f32 = 10;
-    var pos_bat: f32 = @divFloor(screenHeight, 2) - @divFloor(bat_h, 2);
-    var speed_x: f32 = 200;
-    var speed_y: f32 = 200;
-    var bat_speed: f32 = 400;
-    var counter: i16 = 0;
+    var state = new_game_state();
     while (!rl.windowShouldClose()) {
         const dt: f32 = 1.0 / 60.0;
         rl.beginDrawing();
         defer rl.endDrawing();
-        const ball: rl.Rectangle = rl.Rectangle.init(ball_x, ball_y, ball_w, ball_h);
-        const bat: rl.Rectangle = rl.Rectangle.init(screenWidth - 50, pos_bat, bat_w, bat_h);
+        const ball: rl.Rectangle = rl.Rectangle.init(state.ball_x, state.ball_y, state.ball_w, state.ball_h);
+        const bat: rl.Rectangle = rl.Rectangle.init(screenWidth - 50, state.pos_bat, state.bat_w, state.bat_h);
         const coll = rl.getCollisionRec(ball, bat);
-        rl.drawText(rl.textFormat("Score: %02i", .{counter}), 20, 20, 32, rl.Color.green);
+        rl.drawText(rl.textFormat("Score: %02i", .{state.counter}), 20, 20, 32, rl.Color.green);
         if (coll.x != 0) {
-            speed_x = -speed_x;
-            counter += 1;
+            state.speed_x = -state.speed_x;
+            state.counter += 1;
         }
         {
             rl.drawRectangleRec(ball, rl.Color.red);
-            ball_x += speed_x * dt;
-            ball_y += speed_y * dt;
-            if (ball_x + ball_h > screenWidth) {
-                // @Todo: game over
-                counter = 0;
+            if (state.has_started) {
+                state.ball_x += state.speed_x * dt;
+                state.ball_y += state.speed_y * dt;
             }
-            if (ball_x + ball_h > screenWidth or ball_x < 0) {
-                speed_x = -speed_x;
-                speed_x *= 1.05;
+            if (state.ball_x + state.ball_h > screenWidth) {
+                state = new_game_state();
+            }
+            if (state.ball_x + state.ball_h > screenWidth or state.ball_x < 0) {
+                state.speed_x = -state.speed_x;
+                state.speed_x *= 1.05;
                 // box_w += 2;
                 // box_h += 2;
             }
-            if (ball_y + ball_w > screenHeight or ball_y < 0) {
-                speed_y = -speed_y;
-                speed_y *= 1.05;
+            if (state.ball_y + state.ball_w > screenHeight or state.ball_y < 0) {
+                state.speed_y = -state.speed_y;
+                state.speed_y *= 1.05;
             }
         }
         {
             rl.drawRectangleRec(bat, rl.Color.white);
             if (rl.isKeyDown(rl.KeyboardKey.key_k)) {
-                pos_bat -= bat_speed * dt;
+                state.pos_bat -= state.bat_speed * dt;
+                state.has_started = true;
             }
             if (rl.isKeyDown(rl.KeyboardKey.key_j)) {
-                pos_bat += bat_speed * dt;
+                state.pos_bat += state.bat_speed * dt;
+                state.has_started = true;
             }
-            pos_bat = std.math.clamp(pos_bat, 0, screenHeight - bat_h);
+            state.pos_bat = std.math.clamp(state.pos_bat, 0, screenHeight - state.bat_h);
         }
         rl.clearBackground(rl.Color.black);
     }
