@@ -7,34 +7,55 @@ pub fn main() anyerror!void {
     const screenWidth = 800;
     const screenHeight = 450;
 
-    rl.initWindow(screenWidth, screenHeight, "raylib-zig [core] example - basic window");
+    rl.initWindow(screenWidth, screenHeight, "Pong without Friends");
     defer rl.closeWindow();
 
     rl.setTargetFPS(60);
-    var x: i32 = 20;
-    var y: i32 = 20;
-    var speed_x: f64 = 200;
-    var speed_y: f64 = 200;
+    var ball_x: f32 = 0;
+    var ball_y: f32 = 0;
+    var ball_h: f32 = 20;
+    var ball_w: f32 = 20;
+    var bat_h: f32 = 80;
+    var bat_w: f32 = 10;
+    var pos_bat: f32 = @divFloor(screenHeight, 2) - @divFloor(bat_h, 2);
+    var speed_x: f32 = 200;
+    var speed_y: f32 = 200;
+    var bat_speed: f32 = 400;
     while (!rl.windowShouldClose()) {
-        const dt: f64 = 1.0 / 60.0;
+        const dt: f32 = 1.0 / 60.0;
         rl.beginDrawing();
         defer rl.endDrawing();
-        const red = rl.Color.red;
-        rl.drawRectangle(x, y, 20, 20, red);
-        x += @as(i32, @intFromFloat(speed_x * dt));
-        y += @as(i32, @intFromFloat(speed_y * dt));
-        if (x + 10 > screenWidth or x < 0) {
+        const ball: rl.Rectangle = rl.Rectangle.init(ball_x, ball_y, ball_w, ball_h);
+        const bat: rl.Rectangle = rl.Rectangle.init(screenWidth - 50, pos_bat, bat_w, bat_h);
+        const coll = rl.getCollisionRec(ball, bat);
+        if (coll.x != 0) {
             speed_x = -speed_x;
-            speed_x *= 1.05;
         }
-        if (y + 10 > screenHeight or y < 0) {
-            speed_y = -speed_y;
-            speed_y *= 1.05;
+        {
+            rl.drawRectangleRec(ball, rl.Color.red);
+            ball_x += speed_x * dt;
+            ball_y += speed_y * dt;
+            if (ball_x + ball_h > screenWidth or ball_x < 0) {
+                speed_x = -speed_x;
+                speed_x *= 1.05;
+                // box_w += 2;
+                // box_h += 2;
+            }
+            if (ball_y + ball_w > screenHeight or ball_y < 0) {
+                speed_y = -speed_y;
+                speed_y *= 1.05;
+            }
         }
-
+        {
+            rl.drawRectangleRec(bat, rl.Color.white);
+            if (rl.isKeyDown(rl.KeyboardKey.key_k)) {
+                pos_bat -= bat_speed * dt;
+            }
+            if (rl.isKeyDown(rl.KeyboardKey.key_j)) {
+                pos_bat += bat_speed * dt;
+            }
+            pos_bat = std.math.clamp(pos_bat, 0, screenHeight - bat_h);
+        }
         rl.clearBackground(rl.Color.black);
-
-        // rl.drawText("Congrats! You created your first window!", 190, 200, 20, rl.Color.light_gray);
-        //----------------------------------------------------------------------------------
     }
 }
