@@ -21,6 +21,7 @@ pub fn main() anyerror!void {
     var speed_x: f32 = 200;
     var speed_y: f32 = 200;
     var bat_speed: f32 = 400;
+    var counter: i16 = 0;
     while (!rl.windowShouldClose()) {
         const dt: f32 = 1.0 / 60.0;
         rl.beginDrawing();
@@ -28,13 +29,19 @@ pub fn main() anyerror!void {
         const ball: rl.Rectangle = rl.Rectangle.init(ball_x, ball_y, ball_w, ball_h);
         const bat: rl.Rectangle = rl.Rectangle.init(screenWidth - 50, pos_bat, bat_w, bat_h);
         const coll = rl.getCollisionRec(ball, bat);
+        rl.drawText(rl.textFormat("Score: %02i", .{counter}), 20, 20, 32, rl.Color.green);
         if (coll.x != 0) {
             speed_x = -speed_x;
+            counter += 1;
         }
         {
             rl.drawRectangleRec(ball, rl.Color.red);
             ball_x += speed_x * dt;
             ball_y += speed_y * dt;
+            if (ball_x + ball_h > screenWidth) {
+                // @Todo: game over
+                counter = 0;
+            }
             if (ball_x + ball_h > screenWidth or ball_x < 0) {
                 speed_x = -speed_x;
                 speed_x *= 1.05;
